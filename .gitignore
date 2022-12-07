@@ -1,0 +1,11 @@
+**/*.DS_Store
+**/__pycache__
+**/tb/
+.vscode/
+**/*.cache/
+.isort.cfg
+**/.ipynb_checkpoints
+output
+
+*.sh
+*.extxyz

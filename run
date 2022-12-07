@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""
+Meta-script for running experiment in the `scripts/` directory.
+
+Usage:
+    ./run <script> [<args>...]
+"""
+import sys
+from importlib import import_module
+
+to_run = sys.argv[1].replace(".py", "").replace("scripts/", "")
+
+script = import_module(f"scripts.{to_run}")
+script.run()
