@@ -11,3 +11,4 @@ imageio
 quippy-ase
 ase
 pytorch-lightning
+digital-experiments
