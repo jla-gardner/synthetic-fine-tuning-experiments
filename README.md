@@ -9,7 +9,7 @@ Code for generating the results pertaining to pre-training and fine-tuning found
 
 </div>
 
-_(see the [sister repo](https://github.com/jla-gardner/synthetic-data-paper) for results pertaining to atomistic model comparisons)_
+_(see the [sister repo](https://github.com/jla-gardner/synthetic-data-experiments) for results pertaining to atomistic model comparisons)_
 
 ---
 
