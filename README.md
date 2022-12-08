@@ -5,7 +5,7 @@ Code for generating the results pertaining to pre-training and fine-tuning found
 <div align="center">
 
 > **[Synthetic data enable experiments in atomistic machine learning](https://arxiv.org/abs/2211.16443)**\
-> _[John Gardner](https://twitter.com/jla_gardner), [Zoé Faure Beaulieu](https://twitter.com/ZFaureBeaulieu) and [Volker Deringer](https://scholar.google.com/citations?user=LmnbxvQAAAAJ)_
+> _[John Gardner](https://twitter.com/jla_gardner), [Zoé Faure Beaulieu](https://twitter.com/ZFaureBeaulieu) and [Volker Deringer](http://deringer.chem.ox.ac.uk)_
 
 </div>
 
