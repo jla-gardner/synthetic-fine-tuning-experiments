@@ -63,16 +63,3 @@ The scripts for running the experiments are in `./scripts/`. To run one of these
 ```
 
 e.g. `./run synthetic_pretrain` or `./run scripts/train_on_dft.py`.
-
----
-
-## Figures
-
-<div align="center">
-
-<img src="notebooks/comparison.png" width="500px" />
-
-</br>
-<img src="notebooks/pre-training-dataset-size.png" height="250px">
-<img src="notebooks/5-d.png" height="250px">
-</div>
