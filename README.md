@@ -34,7 +34,7 @@ cd synthetic-fine-tuning
 
 ### 2. Install dependencies
 
-We strongly reccomend using a virtual environment. With `conda` installed, this is as simple as:
+We strongly recommend using a virtual environment. With `conda` installed, this is as simple as:
 
 ```bash
 conda create -n fine-tuning python=3.8 -y
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 
 ### 3. Download the data
 
-The **D0** dataset already exists as `./data/bulk_amo.extxyz`. A small sample of the **D1** dataset is included in `./data/synthetic.extxyz`. The full D1 (~1.5GB) exists at [this url](https://github.com/jla-gardner/carbon-data).
+The **D0** dataset already exists as `./data/bulk_amo.extxyz`. A small sample of the **D1** dataset is included in `./data/synthetic.extxyz`. The full **D1** (~1.5GB) exists at [this url](https://github.com/jla-gardner/carbon-data).
 
 
 ### 4. Run the code
