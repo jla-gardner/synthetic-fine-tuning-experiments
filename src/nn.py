@@ -19,7 +19,25 @@ def _neural_net(
     activate_last: bool = False,
     dropout: float = 0.0,
 ) -> torch.nn.Module:
-    """Create a neural network with given layers and activation function"""
+    """
+    Vanilla neural network with given layers and activation function
+
+    Parameters
+    ----------
+    layers : Sequence[int]
+        number of nodes in each layer
+    activation : str, optional
+        activation function, by default "CELU"
+    activate_last : bool, optional
+        whether to activate the last layer, by default False
+    dropout : float, optional
+        dropout rate, by default 0.0
+
+    Returns
+    -------
+    torch.nn.Module
+        neural network
+    """
 
     activation = getattr(torch.nn, activation)()
     layers = [
@@ -37,6 +55,21 @@ def _neural_net(
 
 
 class RegressionModel(LightningModule):
+    """
+    A PyTorch Lightning module for regression
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        model to train
+    loss_fn : str, optional
+        loss function, by default "mse_loss"
+    optimizer : str, optional
+        optimizer, by default "Adam"
+    optimizer_kwargs : dict, optional
+        optimizer keyword arguments, by default None
+    """
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -77,6 +110,10 @@ class RegressionModel(LightningModule):
 
 
 class NeuralNetwork(RegressionModel):
+    """
+    A PyTorch Lightning vanilla neural network
+    """
+
     def __init__(
         self,
         layers: Sequence[int],
@@ -92,6 +129,10 @@ class NeuralNetwork(RegressionModel):
 
 
 class TrainOnSumsNetwork(NeuralNetwork):
+    """
+    A PyTorch Lightning NN that trains on the sum of the output
+    """
+
     def _step(self, batch):
         x, y = batch
         y_hat = self.forward(x).sum(axis=1)
@@ -100,6 +141,9 @@ class TrainOnSumsNetwork(NeuralNetwork):
 
 
 def get_trainer(directory, patience=50, log_every=10, max_epochs=-1, file_suffix=""):
+    """
+    Get a PyTorch Lightning trainer instance
+    """
     return Trainer(
         # enable_progress_bar=False,
         accelerator="auto",
