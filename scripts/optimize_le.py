@@ -1,3 +1,6 @@
+"""
+optimize hyperparameters for training on local energies of the GAP17 dataset
+"""
 from digital_experiments import experiment
 from digital_experiments.optmization import Integer, Real, optimize_step_for
 from makefun import wraps
