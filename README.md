@@ -1,5 +1,7 @@
 # synthetic-fine-tuning-experiments
 
+[![DOI](https://zenodo.org/badge/575466990.svg)](https://zenodo.org/badge/latestdoi/575466990)
+
 Code for generating the results pertaining to pre-training and fine-tuning found in:
 
 <div align="center">
@@ -51,13 +53,12 @@ pip install -r requirements.txt
 
 The **D0** dataset already exists as `./data/bulk_amo.extxyz`. A small sample of the **D1** dataset is included in `./data/synthetic.extxyz`. The full **D1** (~1.5GB) exists at [this url](https://github.com/jla-gardner/carbon-data).
 
-
 ### 4. Run the code
 
 To check that everything is working, run the [demo notebook](notebooks/pre-training-demo.ipynb).
 
 The scripts for running the experiments are in `./scripts/`. To run one of these, do:
-    
+
 ```bash
 ./run <script-name>
 ```
