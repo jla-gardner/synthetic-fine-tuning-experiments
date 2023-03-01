@@ -44,14 +44,37 @@ def split(thing, ratio: Sequence[numeric] = (9, 1)):
 
 
 def mae(a, b):
+    """
+    The (componentwise) mean absolute error between two arrays
+    """
     return np.abs(a - b).mean()
 
 
 def rmse(a, b):
+    """
+    The (componentwise) root mean squared error between two arrays
+    """
     return np.sqrt(((a - b) ** 2).mean())
 
 
 class Data:
+    """
+    A simle utility class for storing data in a dict-like way
+    The logical or operator `|` is overloaded to map a function over the data,
+    like a pipe operator in other languages.
+
+    e.g.
+    >>> data = Data(x=1, y=2)
+    >>> data.x
+    1
+    >>> data + 2
+    Data(x=3, y=4)
+    >>> data.map(lambda x: x + 2)
+    Data(x=3, y=4)
+    >>> data | lambda x: x * 2
+    Data(x=2, y=4)
+    """
+
     def __init__(self, **kwargs):
         self._props = kwargs
         for k, v in kwargs.items():
@@ -123,10 +146,43 @@ def roll(array, percent):
 
 
 def naïve_cv(*data, n_train=-1, fold=0, k=10, ratio=None) -> Data:
-    """naïve cross-validation
+    """
+    naïve cross-validation
 
-    e.g.
-    x, y = naive_cv(x, y, fold=0, k=10, ratio={train: 9, val: 1})
+    Procedure:
+    1. Shuffle the data
+    2. Roll the data by a percentage given by `fold / k`
+    3. Split the data into the different sets based on `ratio`
+    4. wrap in a `Data` object
+
+    Parameters
+    ----------
+    data : array-like
+        The data to split into folds
+    n_train : int, optional
+        The number of training examples to use, by default -1 i.e. all
+    fold : int, optional
+        The fold to use, by default 0
+    k : int, optional
+        The number of folds, by default 10
+    ratio : dict, optional
+        The ratio of the data to split into. Defaults to
+        {"train": k - 2, "val": 1, "test": 1}
+
+    Returns
+    -------
+    Data
+        The data split into the different sets
+
+    Examples
+    --------
+    >>> x = list(range(10))
+    >>> y = list(range(10, 20))
+    >>> data_x, data_y = naïve_cv(x, y, fold=0, k=5, ration={"train": 1, "test": 1})
+    >>> data_x.train
+    [2, 4, 7, 1, 9]
+    >>> data_y.test
+    [15, 11, 13, 17, 18]
     """
 
     if ratio is None:
@@ -165,6 +221,9 @@ def numpy_dataset(*arrays, **loader_kwargs):
 
 
 def shape_preserving_scaler(reference):
+    """
+    create a standard scaler that preserves the shape of the `reference` data
+    """
     _size = reference.shape[-1]
     transform = StandardScaler().fit(reference.reshape(-1, _size)).transform
 
@@ -177,8 +236,22 @@ def shape_preserving_scaler(reference):
 
 @persist
 def get_data(n_max, l_max):
+    """
+    Calculate SOAP vectors for each structure in the GAP17 bulk_amo dataset
+    and extract the per-cell DFT and per-atom local energies.
 
-    structures = [s for s in read( _DATA_DIR / "bulk_amo.extxyz", index=":") if len(s) == 64]
+    Returns
+    -------
+    tuple
+        - soaps (np.ndarray): the SOAP features
+        - dft_energies (np.ndarray): the DFT energies
+        - loca_energies (np.ndarray): the local energies
+        - structures (list): the ASE structures
+    """
+
+    structures = [
+        s for s in read(_DATA_DIR / "bulk_amo.extxyz", index=":") if len(s) == 64
+    ]
 
     desc = Descriptor(f"soap cutoff=3.7 n_max={n_max} l_max={l_max} atom_sigma=0.5")
     for s in structures:
@@ -195,10 +268,28 @@ def get_data(n_max, l_max):
         structures,
     )
 
+
 @persist
 def get_synthetic_data(n_max, l_max, all_data=False):
+    """
+    Calculate SOAP vectors for each structure in the synthetic dataset
+    and extract the per-atom local energies.
 
-    structures = [s for s in read("all_synthetic_data.extxyz" if all_data else "synthetic.extxyz", index="::5" if all_data else ":")]
+    Returns
+    -------
+    tuple
+        - soaps (np.ndarray): the SOAP features
+        - local_energies (np.ndarray): the local energies
+        - structures (list): the ASE structures
+    """
+
+    structures = [
+        s
+        for s in read(
+            "all_synthetic_data.extxyz" if all_data else "synthetic.extxyz",
+            index="::5" if all_data else ":",
+        )
+    ]
 
     desc = Descriptor(f"soap cutoff=3.7 n_max={n_max} l_max={l_max} atom_sigma=0.5")
     for s in structures:
@@ -210,26 +301,6 @@ def get_synthetic_data(n_max, l_max, all_data=False):
     return (
         soaps,
         local_energies[..., np.newaxis] + 157,
-        structures,
-    )
-
-@persist
-def get_surface_data(n_max, l_max):
-
-    structures = [s for s in read("surface_amo.extxyz", index=":") if len(s) == 64]
-
-    desc = Descriptor(f"soap cutoff=3.7 n_max={n_max} l_max={l_max} atom_sigma=0.5")
-    for s in structures:
-        s.arrays["soap"] = desc.calc(s)["data"]
-
-    soaps = np.array([s.arrays["soap"] for s in structures])
-    dft_engergies = np.array([s.get_potential_energy() for s in structures])
-    loca_energies = np.array([s.arrays["gap17_energy"] for s in structures])
-
-    return (
-        soaps,
-        dft_engergies.reshape(-1, 1) + 157 * 64,
-        loca_energies[..., np.newaxis] + 157,
         structures,
     )
 
@@ -248,6 +319,25 @@ def sum_along(axis=-1):
 
 
 def evaluate_model(model, X: Data, y_dft: Data, y_local: Data):
+    """
+    Evaluate a model on a dataset.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to evaluate
+    X : Data
+        The per-atom SOAP vectors
+    y_dft : Data
+        The per-cell DFT energies
+    y_local : Data
+        The per-atom local energies
+
+    Returns
+    -------
+    dict
+        A dictionary containing the errors for the local and structure predictions
+    """
     model.eval()
 
     metrics = [mae, rmse]

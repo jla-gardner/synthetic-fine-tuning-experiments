@@ -29,14 +29,20 @@ def train_nn_on_dft(
     structures_per_batch=64,
 ):
     structures_per_batch = int(structures_per_batch)
+    # calculate SOAP vectors for the GAP17 bulk_amo dataset
+    # and extract per-cell DFT and per-atom local energies
     soaps, dft_energies, local_energies, _ = get_data(n_max, l_max)
+
     # shuffle and split data according to a naive CV policy
+    # put each structure in one of the three splits so as to
+    # avoid data leakage
     X, y_dft, y_local = naïve_cv(
         soaps,
         dft_energies,
         local_energies,
         n_train=n_train,
         fold=fold,
+        ratio={"train": 0.8, "val": 0.1, "test": 0.1},
     )
     # standardize the soap vectors
     X = X | shape_preserving_scaler(X.train)
@@ -49,9 +55,11 @@ def train_nn_on_dft(
         dropout=dropout,
     )
 
+    # train the model on per-cell DFT energies
     train_data, val_data = convert_to_loaders(X, y_dft, batch_size=structures_per_batch)
     get_trainer(current_directory(), patience=100).fit(model, train_data, val_data)
 
+    # evaluate the model
     return evaluate_model(model, X, y_dft, y_local)
 
 

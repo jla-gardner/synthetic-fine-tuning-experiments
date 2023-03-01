@@ -11,7 +11,9 @@ from src.data import (
 from src.nn import NeuralNetwork, TrainOnSumsNetwork, get_trainer
 
 
-@experiment(save_to="experiment-logs/pre-train-on-synthetic", capture_logs=False, verbose=True)
+@experiment(
+    save_to="experiment-logs/pre-train-on-synthetic", capture_logs=False, verbose=True
+)
 def pretrain_then_train(
     fold,
     # data
@@ -22,7 +24,7 @@ def pretrain_then_train(
     # model
     hidden_size=100,
     n_layers=3,
-    dropout=0.,
+    dropout=0.0,
     pre_dropout=0,
     # training
     activation="CELU",
@@ -36,26 +38,24 @@ def pretrain_then_train(
     all_data=False,
 ):
 
-
     # PRE-TRAIN
-
+    # calculate SOAP vectors for the synthetic dataset
+    # and extract per-atom local energies
     synth_soaps, synth_local_energies, _ = get_synthetic_data(n_max, l_max, all_data)
-    # synth_soaps, _, synth_local_energies, _ = get_data(n_max, l_max)
+
     # shuffle and split data according to a naive CV policy
+    # put each structure in one of the three splits so as to
+    # avoid data leakage
     synth_X, synth_y_local = naïve_cv(
         synth_soaps,
         synth_local_energies,
         n_train=n_pretrain,
         fold=fold,
+        ratio={"train": 0.8, "val": 0.1, "test": 0.1},
     )
     # standardize the soap vectors
     standardizer = shape_preserving_scaler(synth_X.train)
     synth_X = synth_X | standardizer
-
-    # synth_X = synth_X | (lambda x: x.reshape(-1, x.shape[-1]))
-    # synth_y_local = synth_y_local | (lambda x: x.reshape(-1, 1))
-
-    print(synth_X.train.shape)
 
     pre_train_model = NeuralNetwork(
         [synth_X.train.shape[-1], *([hidden_size] * n_layers), 1],
@@ -65,13 +65,15 @@ def pretrain_then_train(
         dropout=pre_dropout,
     )
 
+    # pre-train the model on per-atom local energies
     train_data, val_data = convert_to_loaders(
         synth_X, synth_y_local, batch_size=pre_structures_per_batch
     )
     pre_trainer = get_trainer(current_directory(), patience=5, file_suffix="-pre")
     pre_trainer.fit(pre_train_model, train_data, val_data)
- 
+
     # FINE-TUNE
+    # same as in `train_on_dft.py`, but starting from the pre-trained model
 
     soaps, dft_energies, local_energies, _ = get_data(n_max, l_max)
     # shuffle and split data according to a naive CV policy
@@ -84,8 +86,6 @@ def pretrain_then_train(
     )
     # standardize the soap vectors
     X = X | standardizer
-    
-    print(X.train.shape)
 
     model = TrainOnSumsNetwork.load_from_checkpoint(
         pre_trainer.checkpoint_callback.best_model_path,
@@ -96,7 +96,7 @@ def pretrain_then_train(
     train_data, val_data = convert_to_loaders(X, y_dft, batch_size=structures_per_batch)
     trainer = get_trainer(current_directory(), patience=100)
     trainer.fit(model, train_data, val_data)
-    
+
     fine_tune_results = evaluate_model(model, X, y_dft, y_local)
 
     return dict(fine_tune=fine_tune_results)

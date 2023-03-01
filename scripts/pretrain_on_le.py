@@ -10,7 +10,9 @@ from src.data import (
 from src.nn import NeuralNetwork, TrainOnSumsNetwork, get_trainer
 
 
-@experiment(save_to="experiment-logs/pre-train", capture_logs=False, verbose=True, backend="csv")
+@experiment(
+    save_to="experiment-logs/pre-train", capture_logs=False, verbose=True, backend="csv"
+)
 def pretrain_then_train(
     fold=0,
     # data
@@ -36,14 +38,20 @@ def pretrain_then_train(
 
     pre_epochs = int(pre_epochs)
 
+    # PRE-TRAIN
+    # calculate SOAP vectors for the GAP17 bulk_amo dataset
+    # and extract per-atom local energies
     soaps, dft_energies, local_energies, _ = get_data(n_max, l_max)
     # shuffle and split data according to a naive CV policy
+    # put each structure in one of the three splits so as to
+    # avoid data leakage
     X, y_dft, y_local = naïve_cv(
         soaps,
         dft_energies,
         local_energies,
         n_train=n_train,
         fold=fold,
+        ratio={"train": 0.8, "val": 0.1, "test": 0.1},
     )
     # standardize the soap vectors
     X = X | shape_preserving_scaler(X.train)
@@ -56,12 +64,19 @@ def pretrain_then_train(
         dropout=pre_dropout,
     )
 
+    # pre-train the model on per-atom local energies
     train_data, val_data = convert_to_loaders(
         X, y_local, batch_size=pre_structures_per_batch
     )
-    pre_trainer = get_trainer(current_directory(), patience=5, max_epochs=pre_epochs, file_suffix="-pre")
+    pre_trainer = get_trainer(
+        current_directory(), patience=5, max_epochs=pre_epochs, file_suffix="-pre"
+    )
     pre_trainer.fit(pre_train_model, train_data, val_data)
     pretrain_results = evaluate_model(pre_train_model, X, y_dft, y_local)
+
+    # FINE-TUNE
+    # fine-tune the model on total energies
+    # same as in `train_on_dft.py`, but starting from the pre-trained model
 
     model = TrainOnSumsNetwork.load_from_checkpoint(
         pre_trainer.checkpoint_callback.best_model_path,
